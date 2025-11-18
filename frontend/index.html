@@ -1,0 +1,187 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Météo Temps Réel</title>
+    <style>
+        /* ... (Styles CSS non modifiés) ... */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        #info-bar {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            color: #555;
+        }
+
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+        }
+
+        .meteo-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            padding: 20px;
+            border-left: 5px solid #28a745;
+            transition: transform 0.3s ease;
+        }
+
+            .meteo-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            }
+
+        .location {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .station {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .temp-display {
+            font-size: 3.5em;
+            font-weight: 300;
+            color: #dc3545;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 0.95em;
+        }
+
+        .label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .value {
+            font-weight: 400;
+        }
+
+        #loading-message {
+            font-size: 1.2em;
+            color: #ffc107;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌥️ Relevés Météo</h1>
+
+    <p id="info-bar">
+        Heure locale de consultation : <span id="current-time" style="font-weight: bold; color: #007bff;">Chargement...</span>
+    </p>
+
+    <div id="container">
+        <p id="loading-message">Connexion à l'API et chargement des données...</p>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5137/api/Meteo/temps-reel';
+        const container = document.getElementById('container');
+        const loadingMessage = document.getElementById('loading-message');
+        const currentTimeElement = document.getElementById('current-time');
+
+        // --- PARTIE 1 : Horloge locale ---
+        function updateLocalTime() {
+            const now = new Date();
+            const dateFormatted = now.toLocaleDateString('fr-FR');
+            const timeFormatted = now.toLocaleTimeString('fr-FR', {
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            currentTimeElement.textContent = `${dateFormatted} à ${timeFormatted}`;
+        }
+
+        setInterval(updateLocalTime, 1000);
+        updateLocalTime();
+
+
+        // --- PARTIE 2 : Récupération statique des données ---
+        async function fetchMeteoData() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                const data = await response.json();
+
+                loadingMessage.style.display = 'none';
+                container.innerHTML = '';
+
+                data.forEach(releve => {
+                    const card = document.createElement('div');
+                    card.className = 'meteo-card';
+
+                    const formatValue = (value, unit) => value !== null ? `${value} ${unit}` : 'N/D';
+
+                    card.innerHTML = `
+                            <div class="location">${releve.nomVille} (${releve.codePostal})</div>
+                            <div class="station">Station: ${releve.nomStation}</div>
+                            <div class="temp-display">${releve.temperatureCelsius !== null ? releve.temperatureCelsius.toFixed(1) : 'N/D'}°C</div>
+
+                            <div class="detail-row">
+                                <span class="label">Humidité:</span>
+                                <span class="value">${formatValue(releve.humiditePourcentage, '%')}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Vent:</span>
+                                <span class="value">${formatValue(releve.vitesseVentKmh, 'km/h')}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Latitude:</span>
+                                <span class="value">${releve.latitude}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Longitude:</span>
+                                <span class="value">${releve.longitude}</span>
+                            </div>
+                        `;
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données météo:", error);
+                loadingMessage.style.display = 'block';
+                // Affiche un message d'erreur plus clair dans l'interface
+                loadingMessage.textContent = `Erreur critique: ${error.message}. Vérifiez la console (F12) pour plus de détails.`;
+                loadingMessage.style.color = '#dc3545';
+                loadingMessage.style.fontWeight = 'bold';
+            }
+        }
+
+        fetchMeteoData();
+    </script>
+</body>
+</html>

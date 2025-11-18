@@ -5,7 +5,21 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- Configuration de la BDD ---
+// --- 1. Configuration des Politiques CORS (NOUVEAU) ---
+// Ceci permet au navigateur d'accéder à l'API depuis le fichier index.html local
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.AllowAnyOrigin() // Autorise les requêtes de n'importe quelle origine (y compris file://)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
+// ----------------------------------------------------
+
+// 2. Configuration de la BDD
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<MeteoDbContext>(options =>
@@ -16,31 +30,35 @@ builder.Services.AddDbContext<MeteoDbContext>(options =>
     )
 );
 
-// --- Services de l'API et Résolution du Cycle JSON ---
+// 3. Services de l'API et Résolution du Cycle JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Résout l'erreur de cycle JSON
+        // Gère les références circulaires entre les entités (ex: Ville -> Station -> Ville)
         options.JsonSerializerOptions.ReferenceHandler =
             ReferenceHandler.IgnoreCycles;
     });
 
+// 4. Ajout des services Razor Pages (même si non utilisé pour l'API)
 builder.Services.AddRazorPages();
-
-// ATTENTION: AUCUN SERVICE SWAGGER/OPENAPI ICI
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 5. Configuration du pipeline
 if (app.Environment.IsDevelopment())
 {
-    // AUCUN MIDDLEWARE SWAGGER/OPENAPI ICI
+    // AUCUN MIDDLEWARE SWAGGER/OPENAPI ici (pour éviter les erreurs CS1061)
 }
 
 app.UseHttpsRedirection();
+
+// --- 6. Utilisation de la politique CORS (CRUCIAL pour le HTML) ---
+app.UseCors("AllowFrontend");
+// ----------------------------------------------------
+
 app.UseStaticFiles();
 app.UseAuthorization();
 app.MapRazorPages();
-app.MapControllers(); // ROUTAGE DE L'API
+app.MapControllers();
 
 app.Run();
