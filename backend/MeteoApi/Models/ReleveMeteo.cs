@@ -1,32 +1,32 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MeteoApi.Models
 {
-	// La classe ReleveMeteo correspond à la table RelevesMeteo
-	public class ReleveMeteo
-	{
-		// Clé primaire
-		public int IdReleve { get; set; }
+    public class ReleveMeteo
+    {
+        [Key]
+        [Column("id_releve")]
+        public int IdReleve { get; set; }
 
-		// Clé étrangère (FK) vers la table Stations
-		public int IdStation { get; set; }
+        [Column("id_station")]
+        public int IdStation { get; set; }
 
-		// Colonnes de la table
-		public DateTime Horodatage { get; set; }
+        [Column("horodatage")]
+        public DateTime Horodatage { get; set; }
 
-		// Utilisation de [Column] pour s'assurer que le type DECIMAL est bien géré par MySQL
-		[Column(TypeName = "decimal(5, 2)")]
-		public decimal TemperatureCelsius { get; set; }
+        [Column("temperature_celsius", TypeName = "decimal(5, 2)")]
+        public decimal TemperatureCelsius { get; set; }
 
-		// Le '?' permet que la valeur soit NULL en BDD
-		[Column(TypeName = "decimal(5, 2)")]
-		public decimal? HumiditePourcentage { get; set; }
+        // Note: Le '?' permet que la valeur soit NULL en BDD
+        [Column("humidite_pourcentage", TypeName = "decimal(5, 2)")]
+        public decimal? HumiditePourcentage { get; set; }
 
-		[Column(TypeName = "decimal(5, 2)")]
-		public decimal? VitesseVentKmh { get; set; }
+        [Column("vitesse_vent_kmh", TypeName = "decimal(5, 2)")]
+        public decimal? VitesseVentKmh { get; set; }
 
-		// Relation de navigation : 
-		public Station Station { get; set; } // Un Relevé appartient à une Station
-	}
+        // Relation de navigation (initialisation pour éviter les warnings)
+        public Station Station { get; set; } = null!; // null! indique que c'est géré par EF Core
+    }
 }

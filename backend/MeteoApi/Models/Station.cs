@@ -1,24 +1,30 @@
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MeteoApi.Models
 {
-	// La classe Station correspond à la table Stations
-	public class Station
-	{
-		// Clé primaire
-		public int IdStation { get; set; }
+    public class Station
+    {
+        [Key]
+        [Column("id_station")]
+        public int IdStation { get; set; }
 
-		// Clé étrangère (FK) vers la table Villes
-		public int IdVille { get; set; }
+        // Clé étrangère
+        [Column("id_ville")]
+        public int IdVille { get; set; }
 
-		// Colonnes de la table
-		public string NomStation { get; set; }
-		public decimal Latitude { get; set; }
-		public decimal Longitude { get; set; }
+        [Column("nom_station")]
+        public string NomStation { get; set; } = string.Empty; // Initialisation pour éviter les warnings
 
-		// Relation de navigation : 
-		public Ville Ville { get; set; } // Une Station appartient à une Ville
-		public ICollection<ReleveMeteo> RelevesMeteo { get; set; } // Une Station a plusieurs Relevés
-	}
+        [Column("latitude", TypeName = "decimal(10, 8)")]
+        public decimal Latitude { get; set; }
+
+        [Column("longitude", TypeName = "decimal(11, 8)")]
+        public decimal Longitude { get; set; }
+
+        // Relations de navigation (initialisation pour éviter les warnings)
+        public Ville Ville { get; set; } = null!; // null! indique que c'est géré par EF Core
+        public ICollection<ReleveMeteo> RelevesMeteo { get; set; } = new List<ReleveMeteo>();
+    }
 }

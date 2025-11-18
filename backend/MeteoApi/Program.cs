@@ -1,62 +1,46 @@
-using MeteoApi.Data; // Nécessaire pour MeteoDbContext
+using MeteoApi.Data;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure; // Nécessaire pour AutoDetect ServerVersion
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
-// 1. Récupère la chaîne de connexion depuis appsettings.json
+// --- Configuration de la BDD ---
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// 2. Enregistre le DbContext et configure le connecteur MySQL
 builder.Services.AddDbContext<MeteoDbContext>(options =>
     options.UseMySql(
         connectionString,
-        ServerVersion.AutoDetect(connectionString), // Détecte automatiquement la version de MySQL
-        mySqlOptions => mySqlOptions.EnableRetryOnFailure() // Option pour gérer les erreurs temporaires
+        ServerVersion.AutoDetect(connectionString),
+        mySqlOptions => mySqlOptions.EnableRetryOnFailure()
     )
 );
 
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// --- Services de l'API et Résolution du Cycle JSON ---
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Résout l'erreur de cycle JSON
+        options.JsonSerializerOptions.ReferenceHandler =
+            ReferenceHandler.IgnoreCycles;
+    });
+
+builder.Services.AddRazorPages();
+
+// ATTENTION: AUCUN SERVICE SWAGGER/OPENAPI ICI
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // AUCUN MIDDLEWARE SWAGGER/OPENAPI ICI
 }
 
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.UseStaticFiles();
+app.UseAuthorization();
+app.MapRazorPages();
+app.MapControllers(); // ROUTAGE DE L'API
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

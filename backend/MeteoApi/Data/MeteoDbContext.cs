@@ -5,23 +5,46 @@ namespace MeteoApi.Data
 {
     public class MeteoDbContext : DbContext
     {
-        // Constructeur qui permet la configuration de la connexion
         public MeteoDbContext(DbContextOptions<MeteoDbContext> options)
             : base(options)
         {
         }
 
-        // Chaque DbSet correspond à une table dans la base de données
         public DbSet<Ville> Villes { get; set; }
         public DbSet<Station> Stations { get; set; }
         public DbSet<ReleveMeteo> RelevesMeteo { get; set; }
 
-        // Mappage pour assurer que les noms de tables C# correspondent aux noms SQL
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Ville>().ToTable("Villes");
-            modelBuilder.Entity<Station>().ToTable("Stations");
-            modelBuilder.Entity<ReleveMeteo>().ToTable("RelevesMeteo");
+            // 1. Définition des noms de tables et des clés primaires
+            // ToTable("NomTableSQL") est nécessaire car les noms de table SQL sont en PascalCase
+            modelBuilder.Entity<Ville>()
+                .ToTable("Villes")
+                .HasKey(v => v.IdVille);
+
+            modelBuilder.Entity<Station>()
+                .ToTable("Stations")
+                .HasKey(s => s.IdStation);
+
+            modelBuilder.Entity<ReleveMeteo>()
+                .ToTable("RelevesMeteo")
+                .HasKey(r => r.IdReleve);
+
+            // 2. Mappage Explicite des Clés Étrangères (Résout les conflits de nommage)
+
+            // Relation Station <-> Ville
+            modelBuilder.Entity<Station>()
+                .HasOne(s => s.Ville)
+                .WithMany(v => v.Stations)
+                .HasForeignKey(s => s.IdVille);
+
+            // Relation ReleveMeteo <-> Station
+            modelBuilder.Entity<ReleveMeteo>()
+                .HasOne(r => r.Station)
+                .WithMany(s => s.RelevesMeteo)
+                .HasForeignKey(r => r.IdStation);
+
+            base.OnModelCreating(modelBuilder);
         }
     }
 }
